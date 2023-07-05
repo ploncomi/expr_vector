@@ -368,7 +368,7 @@ ADD_EXPR_VECT_POST_OP(ExprVectPostMult, *)
 ADD_EXPR_VECT_POST_OP(ExprVectPostDiv, /)
 
 ADD_EXPR_VECT_PRE_DOUBLE(ExprVectPreMultDouble, *)
-ADD_EXPR_VECT_PRE_DOUBLE(ExprVectPostMultDouble, *)
+ADD_EXPR_VECT_POST_DOUBLE(ExprVectPostMultDouble, *)
 
 ADD_EXPR_VECT_FN_1_ARG(ExprVectorSin, sin)
 ADD_EXPR_VECT_FN_1_ARG(ExprVectorCos, cos)
