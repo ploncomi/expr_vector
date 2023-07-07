@@ -79,6 +79,8 @@ int main()
   for (size_t i = 0; i < n; i++)
     b0[i] = 2*rand();  // = 0
   
+  double t1, t2;
+
 
   // Warm up
   {
@@ -104,7 +106,8 @@ int main()
 
     auto stop = std::chrono::high_resolution_clock::now();
 
-    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count() << " " << sum(c0) << std::endl;
+    t1 = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    std::cout << t1 << " " << sum(c0) << std::endl;
   }
 
   // Using vector
@@ -122,9 +125,13 @@ int main()
 
     c0 = std::move(c);
     auto stop = std::chrono::high_resolution_clock::now();
+
+    t2 = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
     
-    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count() << " " << sum(c0) << std::endl;
+    std::cout << t2 << " " << sum(c0) << std::endl;
   }
+
+  std::cout << "Processing time ratio: " << t1 / t2 * 100 << "%" << std::endl;
 
   return 0;
 }
