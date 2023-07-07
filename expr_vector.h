@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <cmath>
 #include <functional>
+#include <iostream>
 
 // Start of main classes for ExprVector
 
@@ -21,7 +22,7 @@ public:
   size_t n;
 
   BuffData<T>() {n=0;}
-  BuffData<T>(const BuffData<T>& other) {vect.resize(n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
+  BuffData<T>(const BuffData<T>& other) {std::cout << "Copia BuffData" << std::endl; vect.resize(other.n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
 
   BuffData<T>(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
   BuffData<T>(size_t n, const T initialValue) {vect = std::vector<T>(n, initialValue); buffer = vect.data(); this->n = vect.size();}
@@ -45,6 +46,43 @@ public:
     return n;
   }
 };
+
+template<typename T, typename Op1>
+class BuffDataStrided
+{
+public:
+  Op1& op1;
+  long start;
+  long end;
+  long stride;
+  size_t n;
+
+  BuffDataStrided(Op1& a, long start, long end, long stride) : op1(a), start(start), end(end), stride(stride)
+  {
+    n = std::abs( (end-start) / stride );
+    while (n%stride != 0)
+        n++;
+  }
+
+  void resize(size_t n) {std::cerr << "Error: BuffDataStrided::resize() called" << std::endl;}
+
+  inline T operator[](const std::size_t i) const
+  {
+    return op1[start + i*stride];
+  }
+
+  inline T& operator[](const std::size_t i)
+  {
+    return op1[start + i*stride];
+  }
+  
+  inline std::size_t size() const
+  {
+    return n;
+  }
+};
+
+
 
 
 /** ExprVectorNeg represents the negation of a ExprVector */
@@ -73,19 +111,24 @@ class ExprVector
 public:
   Cont cont;
 
-  // Empty constructed ExprVector must be swapped with a vector with known size before being used
+  // Empty constructed ExprVector must be given a buffer before being used
   ExprVector() {}
   void setBuffer(T* buffer, size_t n) {cont.buffer = buffer; cont.n = n;}
   void setBuffer(const T* buffer, size_t n) {cont.buffer = const_cast<T*>(buffer); cont.n = n;}
 
-  // MyVector with initial size
+  // ExprVector with initial size
   ExprVector(const std::size_t n) : cont(n) {}
 
-  // MyVector with initial size and value
-  ExprVector(const std::size_t n, const T initialValue) : cont(n, initialValue) {}
+  // ExprVector with initial size and value
+  ExprVector(const std::size_t n, const T initialValue) : cont(n, initialValue) {std::cout << "333" << std::endl;}
 
   // Constructor for underlying container
   ExprVector(const Cont& other) : cont(other) {}
+
+  // Unneeded
+  //template<typename R2, typename std::enable_if<std::is_same<R2,BuffData<T>>::value, nullptr_t>::type = nullptr>
+  //ExprVector(const ExprVector<T,R2> & other) {}
+
 
   // assignment operator for ExprVector of different type
   template<typename T2, typename R2>
@@ -98,7 +141,21 @@ public:
     return *this;
   }
 
-  inline ExprVector<T, ExprVectorNeg<T, Cont> > operator-() {return ExprVector<T, ExprVectorNeg<T, Cont>>(ExprVectorNeg<T, Cont>(data()));}
+
+  void operator=(const T& val)
+  {
+    for (std::size_t i = 0; i < cont.size(); ++i)
+      cont[i] = val;
+  }
+
+  ExprVector& operator=(const ExprVector& other)
+  {
+    if (cont.size() == 0)
+      cont.resize(other.size());
+    for (std::size_t i = 0; i < cont.size(); ++i)
+      cont[i] = other[i];
+    return *this;
+  }
 
   // size of underlying container
   inline std::size_t size() const
@@ -117,6 +174,22 @@ public:
     return cont[i];
   }
 
+  // Negative of ExprVector
+  inline ExprVector<T, ExprVectorNeg<T, Cont> > operator-() {return ExprVector<T, ExprVectorNeg<T, Cont>>(ExprVectorNeg<T, Cont>(data()));}
+
+  // Stride of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::array<long,3> start_end_stride)
+  {
+    long start  = start_end_stride[0];
+    long end    = start_end_stride[1];
+    long stride = start_end_stride[2];
+    while (start < 0)
+      start += size();
+    while (end < 0)
+      end += size();
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, stride) );
+  }
+
   inline T sum()
   {
     if (size() == 0)
@@ -129,6 +202,15 @@ public:
     return val;
   }
 
+  inline size_t count(const T& val)
+  {
+    size_t amount = 0;
+    for (size_t i=0; i<size(); i++)
+      amount += (cont[i] == val);
+    return amount;
+  }
+
+
   // returns the underlying data
   inline const Cont& data() const
   {
@@ -139,32 +221,43 @@ public:
   {
     return cont;
   }
+
+  inline T* begin()
+  {
+    return cont.data();
+  }
+
+  inline T* end()
+  {
+    return cont.data() + cont.size();
+  }
+
 };
 
 
-#define ADD_EXPR_VECT_OPERATOR_2_ARGS(NAME, OP)                            \
-                                                                           \
-template<typename T, typename Op1, typename Op2>                           \
-class NAME                                                                 \
-{                                                                          \
-  const Op1& op1;                                                          \
-  const Op2& op2;                                                          \
-                                                                           \
-public:                                                                    \
-  NAME(const Op1& a, const Op2& b) : op1(a), op2(b) {}                     \
-                                                                           \
-  inline T operator[](const std::size_t i) const                           \
-  {                                                                        \
-    return op1[i] OP op2[i];                                               \
-  }                                                                        \
-                                                                           \
-  inline std::size_t size() const                                          \
-  {                                                                        \
-    return op1.size();                                                     \
-  }                                                                        \
-};                                                                         \
-                                                                           \
-                                                                           \
+#define ADD_EXPR_VECT_OPERATOR_2_ARGS(NAME, OP)                                   \
+                                                                                  \
+template<typename T, typename Op1, typename Op2>                                  \
+class NAME                                                                        \
+{                                                                                 \
+  const Op1& op1;                                                                 \
+  const Op2& op2;                                                                 \
+                                                                                  \
+public:                                                                           \
+  NAME(const Op1& a, const Op2& b) : op1(a), op2(b) {}                            \
+                                                                                  \
+  inline T operator[](const std::size_t i) const                                  \
+  {                                                                               \
+    return op1[i] OP op2[i];                                                      \
+  }                                                                               \
+                                                                                  \
+  inline std::size_t size() const                                                 \
+  {                                                                               \
+    return op1.size();                                                            \
+  }                                                                               \
+};                                                                                \
+                                                                                  \
+                                                                                  \
 template<typename T, typename R1, typename R2>                                    \
 inline ExprVector<T, NAME<T, R1, R2> >                                            \
 operator OP (const ExprVector<T, R1>& a, const ExprVector<T, R2>& b)              \
@@ -321,35 +414,35 @@ inline fn (const ExprVector<T, R1>& a)                                     \
 
 
 // This is not too much faster than vectors because of function calls..
-#define ADD_EXPR_VECT_FN_2_ARG(NAME, fn)                                   \
-                                                                           \
-template<typename T, typename Op1, typename Op2>                           \
-class NAME                                                                 \
-{                                                                          \
-  const Op1& op1;                                                          \
-  const Op2& op2;                                                          \
-                                                                           \
-public:                                                                    \
-  NAME(const Op1& a, const Op1& b) : op1(a), op2(b) {}                     \
-                                                                           \
-  inline T operator[](const std::size_t i) const                           \
-  {                                                                        \
-    return fn(op1[i], op2[i]);                                             \
-  }                                                                        \
-                                                                           \
-  inline std::size_t size() const                                          \
-  {                                                                        \
-    return op1.size();                                                     \
-  }                                                                        \
-};                                                                         \
-                                                                           \
-                                                                           \
-template<typename T, typename R1, typename R2>                             \
-ExprVector<T, NAME<T, R1, R2> >                                            \
-inline fn (const ExprVector<T, R1>& a, const ExprVector<T, R2>& b)         \
-{                                                                          \
-  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2>(a.data(), b.data()));               \
-}                                                                          \
+#define ADD_EXPR_VECT_FN_2_ARG(NAME, fn)                                          \
+                                                                                  \
+template<typename T, typename Op1, typename Op2>                                  \
+class NAME                                                                        \
+{                                                                                 \
+  const Op1& op1;                                                                 \
+  const Op2& op2;                                                                 \
+                                                                                  \
+public:                                                                           \
+  NAME(const Op1& a, const Op1& b) : op1(a), op2(b) {}                            \
+                                                                                  \
+  inline T operator[](const std::size_t i) const                                  \
+  {                                                                               \
+    return fn(op1[i], op2[i]);                                                    \
+  }                                                                               \
+                                                                                  \
+  inline std::size_t size() const                                                 \
+  {                                                                               \
+    return op1.size();                                                            \
+  }                                                                               \
+};                                                                                \
+                                                                                  \
+                                                                                  \
+template<typename T, typename R1, typename R2>                                    \
+ExprVector<T, NAME<T, R1, R2> >                                                   \
+inline fn (const ExprVector<T, R1>& a, const ExprVector<T, R2>& b)                \
+{                                                                                 \
+  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2>(a.data(), b.data()));    \
+}                                                                                 \
 
 
 ADD_EXPR_VECT_OPERATOR_2_ARGS(ExprVectorAdd, +)
@@ -374,4 +467,3 @@ ADD_EXPR_VECT_FN_1_ARG(ExprVectorSin, sin)
 ADD_EXPR_VECT_FN_1_ARG(ExprVectorCos, cos)
 
 ADD_EXPR_VECT_FN_2_ARG(ExprVectorAtan2, atan2)
-
