@@ -6,7 +6,7 @@ It is provided inside a single header file.
 It aims to be similar to std::valarray, but the option for providing an external buffer makes the computations faster, as initialization doesn't require to copy all of the elements:
 
 ```
-ExprVector<double> v(n);
+std::vector<double> v(n);
 ...
 ExprVector<double> a;
 a.setBuffer(v.data(), v.size());
