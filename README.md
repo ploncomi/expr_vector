@@ -12,7 +12,7 @@ ExprVector<double> a;
 a.setBuffer(v.data(), v.size());
 ```
 
-Also it supports using of python-like strides:
+Also it supports using of python-like strides `{start,end,stride}`:
 
 ```
 c[{0,-1,2}] = a[{0,-1,2}] + b[{1,long(n),2}];
