@@ -24,7 +24,7 @@ public:
   size_t n;
 
   BuffData<T>() {n=0;}
-  BuffData<T>(const BuffData<T>& other) {std::cout << "Copia BuffData" << std::endl; vect.resize(other.n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
+  BuffData<T>(const BuffData<T>& other) {vect.resize(other.n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
 
   BuffData<T>(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
   BuffData<T>(size_t n, const T initialValue) {vect = std::vector<T>(n, initialValue); buffer = vect.data(); this->n = vect.size();}
@@ -134,7 +134,7 @@ public:
   ExprVector(const std::size_t n) : cont(n) {}
 
   // ExprVector with initial size and value
-  ExprVector(const std::size_t n, const T initialValue) : cont(n, initialValue) {std::cout << "333" << std::endl;}
+  ExprVector(const std::size_t n, const T initialValue) : cont(n, initialValue) {}
 
   // Constructor for underlying container
   ExprVector(const Cont& other) : cont(other) {}
