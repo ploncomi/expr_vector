@@ -1,4 +1,5 @@
-// Compile with -O3
+// NOTE: In g++, compile with -O3
+// NOTE: In msvc, compile with /std:c++14 /O2 /EHsc. Not using /EHsc will cause the code to crash
 
 #include "expr_vector.h"
 #include <iostream>

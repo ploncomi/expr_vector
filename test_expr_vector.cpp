@@ -1,4 +1,5 @@
-// Compile with -O3
+// NOTE: In g++, compile with -O3
+// NOTE: In msvc, compile with /std:c++14 /O2 /EHsc. Not using /EHsc will cause the code to crash
 
 #include "expr_vector.h"
 #include <iostream>
@@ -40,10 +41,13 @@ int main()
 
   // Using strides (python-like format: {start, end, stride})
   // If "start" or "end" are lesser than 0, they count back from the array's ending
+  // Use the symbol _ for a missing index. Example: [::2] transforms into {_,_,2}
   d = 0;
   e = 0;
 
-  f[{0,-1,2}] = d[{0,-1,2}] + e[{1,long(n),2}];
+  using namespace expr_vector_default_index;
+
+  f[{0,-1,2}] = d[{0,-1,2}] + e[{1,_,2}];
 
   std::cout << "Number of zeros: " << f.count(0) << std::endl;
 
