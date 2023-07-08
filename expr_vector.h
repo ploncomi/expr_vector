@@ -187,7 +187,7 @@ public:
   // Negative of ExprVector
   inline ExprVector<T, ExprVectorNeg<T, Cont> > operator-() {return ExprVector<T, ExprVectorNeg<T, Cont>>(ExprVectorNeg<T, Cont>(data()));}
 
-  // Stride of ExprVector
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long> start_end)
   {
     long start  = std::get<0>(start_end);
@@ -200,7 +200,7 @@ public:
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, stride) );
   }
 
-  // Stride of ExprVector
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long,long> start_end_stride)
   {
     long start  = std::get<0>(start_end_stride);
@@ -213,7 +213,7 @@ public:
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, stride) );
   }
 
-  // Stride of ExprVector
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI,long> start_end_stride)
   {
     long start  = std::get<0>(start_end_stride);
@@ -230,7 +230,7 @@ public:
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, stride) );
   }
 
-  // Stride of ExprVector
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI> start_end)
   {
     long start  = std::get<0>(start_end);
@@ -240,7 +240,7 @@ public:
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, stride) );
   }
 
-  // Stride of ExprVector
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,long> start_end)
   {
     long start  = 0;
@@ -251,7 +251,7 @@ public:
   }
 
 
-  // Stride of ExprVector
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,DI,long> start_end_stride)
   {
     long start;
@@ -274,7 +274,7 @@ public:
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, stride) );
   }
 
-  // Stride of ExprVector
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,DI> start_end)
   {
     long start  = 0;
