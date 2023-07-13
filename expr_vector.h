@@ -11,6 +11,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <limits>
 
 // Start of main classes for ExprVector
 
@@ -112,7 +113,11 @@ public:
 
 namespace expr_vector_default_index
 {
+#if __GNUC__ < 6 || (__GNUC__ == 6 && __GNUC_MINOR__ <= 1)  // Old compiler
+  static constexpr long _ = std::numeric_limits<long>::max();
+#else
   static constexpr ExprVectorDefaultIndex _ = ExprVectorDefaultIndex();
+#endif
 };
 
 
@@ -202,99 +207,60 @@ public:
   // Negative of ExprVector
   inline ExprVector<T, ExprVectorNeg<T, Cont> > operator-() {return ExprVector<T, ExprVectorNeg<T, Cont>>(ExprVectorNeg<T, Cont>(data()));}
 
-  // Slice of ExprVector
-  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long> start_end)
+#if __GNUC__ < 6 || (__GNUC__ == 6 && __GNUC_MINOR__ <= 1)  // Old compiler
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::initializer_list<long> start_end_step)
   {
-    long start  = std::get<0>(start_end);
-    long end    = std::get<1>(start_end);
-    long step   = 1;
-    while (start < 0)
-      start += size();
-    while (end < 0)
-      end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
-  }
+    using namespace expr_vector_default_index;
+    long start  = start_end_step.begin()[0];
+    long end    = start_end_step.begin()[1];
+    long step   = start_end_step.begin()[2];
 
-  // Slice of ExprVector
-  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long,long> start_end_step)
-  {
-    long start  = std::get<0>(start_end_step);
-    long end    = std::get<1>(start_end_step);
-    long step   = std::get<2>(start_end_step);
-    while (start < 0)
-      start += size();
-    while (end < 0)
-      end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
-  }
+    DI x;
 
-  // Slice of ExprVector
-  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long,DI> start_end_step)
-  {
-    long start  = std::get<0>(start_end_step);
-    long end    = std::get<1>(start_end_step);
-    long step   = 1;
-    while (start < 0)
-      start += size();
-    while (end < 0)
-      end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
-  }
+    if (start_end_step.size() == 3)
+    {
+      if (start == _ && end == _ && step == _)
+        return operator[](std::make_tuple(x,x,x)); //return [](std::make_tuple<DI,DI,DI>(x,x,x));
+      if (start == _ && end == _ && step != _)
+        return operator[](std::make_tuple(x,x,step)); //return [](std::make_tuple<DI,DI,long>(x,x,step));
+      if (start == _ && end != _ && step == _)
+        return operator[](std::make_tuple(x,end,x)); //return [](std::make_tuple<DI,long,DI>(x,end,x));
+      if (start == _ && end != _ && step != _)
+        return operator[](std::make_tuple(x,end,step)); //return [](std::make_tuple<DI,long,long>(x,end,step));
 
-  // Slice of ExprVector
-  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI,long> start_end_step)
-  {
-    long start  = std::get<0>(start_end_step);
-    long end;
-    long step   = std::get<2>(start_end_step);
-
-    if (step > 0)
-       end = size();
+      if (start != _ && end == _ && step == _)
+        return operator[](std::make_tuple(start,x,x)); //return [](std::make_tuple<long,DI,DI>(start,x,x));
+      if (start != _ && end == _ && step != _)
+        return operator[](std::make_tuple(start,x,step)); //return [](std::make_tuple<long,DI,long>(start,x,step));
+      if (start != _ && end != _ && step == _)
+        return operator[](std::make_tuple(start,end,x));  //return [](std::make_tuple<long,long,DI>(start,end,x));
+      if (start != _ && end != _ && step != _)
+        return operator[](std::make_tuple(start,end,step));  //return [](std::make_tuple<long,long,long>(start,end,step));
+    }
     else
-      end = -1;
-
-    while (start < 0)
-      start += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    {
+      if (start == _ && end == _)
+        return operator[](std::make_tuple(x,x)); //return [](std::make_tuple<DI,DI>(x,x));
+      if (start == _ && end != _)
+        return operator[](std::make_tuple(x,end)); //return [](std::make_tuple<DI,long>(x,end));
+      if (start != _ && end == _)
+        return operator[](std::make_tuple(start,x)); //return [](std::make_tuple<long,DI>(start,x));
+      if (start != _ && end != _)
+        return operator[](std::make_tuple(start,end));  //return [](std::make_tuple<long,long>(start,end));
+    }
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) ); // This could not be executed
   }
+#endif  
+
 
   // Slice of ExprVector
-  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,long,long> start_end_step)
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,DI,DI> start_end_step)
   {
-    long start;
-    long end = std::get<1>(start_end_step);
-    long step = std::get<2>(start_end_step);
-
-    if (step > 0)
-      start = 0;
-    else
-      start = size()-1;
-
-    while (end < 0)
-      end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
-  }
-
-  // Slice of ExprVector
-  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI> start_end)
-  {
-    long start  = std::get<0>(start_end);
+    long start = 0;
     long end = size();
     long step = 1;
-
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
   }
-
-  // Slice of ExprVector
-  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,long> start_end)
-  {
-    long start  = 0;
-    long end = std::get<1>(start_end);
-    long step = 1;
-
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
-  }
-
 
   // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,DI,long> start_end_step)
@@ -318,12 +284,125 @@ public:
   }
 
   // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,long,DI> start_end_step)
+  {
+    long start;
+    long end = std::get<1>(start_end_step);
+    long step = 1;
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,long,long> start_end_step)
+  {
+    long start;
+    long end = std::get<1>(start_end_step);
+    long step = std::get<2>(start_end_step);
+
+    if (step > 0)
+      start = 0;
+    else
+      start = size()-1;
+
+    while (end < 0)
+      end += size();
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI,DI> start_end_step)
+  {
+    long start = std::get<0>(start_end_step);
+    long end = size();
+    long step = 1;
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI,long> start_end_step)
+  {
+    long start  = std::get<0>(start_end_step);
+    long end;
+    long step   = std::get<2>(start_end_step);
+
+    if (step > 0)
+       end = size();
+    else
+      end = -1;
+
+    while (start < 0)
+      start += size();
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long,DI> start_end_step)
+  {
+    long start  = std::get<0>(start_end_step);
+    long end    = std::get<1>(start_end_step);
+    long step   = 1;
+    while (start < 0)
+      start += size();
+    while (end < 0)
+      end += size();
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }  
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long,long> start_end_step)
+  {
+    long start  = std::get<0>(start_end_step);
+    long end    = std::get<1>(start_end_step);
+    long step   = std::get<2>(start_end_step);
+    while (start < 0)
+      start += size();
+    while (end < 0)
+      end += size();
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+  // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,DI> start_end)
   {
     long start  = 0;
     long end = size();
     long step = 1;
 
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,long> start_end)
+  {
+    long start  = 0;
+    long end = std::get<1>(start_end);
+    long step = 1;
+
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI> start_end)
+  {
+    long start  = std::get<0>(start_end);
+    long end = size();
+    long step = 1;
+
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+  }
+
+  // Slice of ExprVector
+  inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,long> start_end)
+  {
+    long start  = std::get<0>(start_end);
+    long end    = std::get<1>(start_end);
+    long step   = 1;
+    while (start < 0)
+      start += size();
+    while (end < 0)
+      end += size();
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
   }
 
