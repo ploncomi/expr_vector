@@ -15,6 +15,8 @@ a.setBuffer(v.data(), v.size());
 Also it supports using of python-like slices `{start,end,step}`:
 
 ```
+using namespace expr_vector_default_index;
+
 // c[0:-1:2] = a[0:-1:2] + b[1::2]
 c[{0,-1,2}] = a[{0,-1,2}] + b[{1,_,2}];
 ```
