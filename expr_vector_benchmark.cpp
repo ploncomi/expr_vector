@@ -4,6 +4,7 @@
 #include "expr_vector.h"
 #include <iostream>
 #include <chrono>
+#include <valarray>
 
 
 // Vector operator for benchmarking
@@ -72,7 +73,7 @@ double sum(const std::vector<double>& a)
 
 int main()
 {
-  size_t n = 100000;
+  size_t n = 10000000;
   std::vector<double> a0(n), b0(n), c0(n);
 
   for (size_t i = 0; i < n; i++)
@@ -80,18 +81,48 @@ int main()
   for (size_t i = 0; i < n; i++)
     b0[i] = 2*rand();  // = 0
   
-  double t1, t2;
+  double t_valarray;
+  double t_exprvector;
+  double t_rawfor;
+  double t_vector;
 
 
-  // Warm up
+//#define FORMULA     c = a + (b*a+b)*a + (a*b) + (a*b*b*a) + (a*a*a) + b;
+#define FORMULA     c = a + 0.5*a + 0.5*a;
+//#define FORMULA     c = a;
+//#define FORMULA     c = sin( (a+b) ) + sin(a);
+//#define FORMULA     c = atan2(a, b);
+
+//#define FORMULA_FOR     c[i] = a[i] + (b[i]*a[i]+b[i])*a[i] + (a[i]*b[i]) + (a[i]*b[i]*b[i]*a[i]) + (a[i]*a[i]*a[i]) + b[i];
+#define FORMULA_FOR     c[i] = a[i] + 0.5*a[i] + 0.5*a[i];
+//#define FORMULA_FOR     c[i] = a[i];
+//#define FORMULA_FOR     c[i] = sin( (a[i]+b[i]) ) + sin(a[i]);
+//#define FORMULA_FOR     c[i] = atan2(a[i], b[i]);
+
+  // Warm up...
   {
     std::vector<double> a(n,0), b(n,1), c(n,2);
-    c = a+b+a+b;
-  }
-  
-  // Using ExprVector
+    c = a+b+a+b+a+b;
+  }  
+
+  // valarray
   {
-    std::cout << "ExprVector" << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    std::valarray<double> a(n), b(n), c(n);
+    for (size_t i=0; i<n; i++)
+      a[i] = a0[i];
+    for (size_t i=0; i<n; i++)
+      b[i] = b0[i];
+
+    FORMULA
+
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    t_valarray = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+  }
+
+  // ExprVector
+  {
     auto start = std::chrono::high_resolution_clock::now();
     ExprVector<double> a, b, c;
     if (c0.size() == 0)
@@ -100,39 +131,48 @@ int main()
     b.setBuffer(b0.data(), b0.size());  // Optional
     c.setBuffer(c0.data(), c0.size());  // Optional
 
-    //c = a + (b*a+b)*a + (a*b) + (a*b*b*a) + (a*a*a) + b;
-    c = a + 0.5*a + 0.5*a;
-    //c = sin( (a+b) ) + sin(a);
-    //c = atan2(a, b);
+    FORMULA
 
     auto stop = std::chrono::high_resolution_clock::now();
 
-    t1 = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-    std::cout << t1 << " " << sum(c0) << std::endl;
+    t_exprvector = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+  }
+
+  // raw for
+  {
+    std::vector<double> a=a0, b=b0;
+    std::vector<double> c(n);
+    auto start = std::chrono::high_resolution_clock::now();
+    for (size_t i=0; i<n; i++)
+    {
+      FORMULA_FOR
+    }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    t_rawfor = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
   }
 
   // Using vector
   {
-    std::cout << "vector (move)" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<double> a(n), b(n), c(n);
+    std::vector<double> a, b, c(n);
     a = std::move(a0);
     b = std::move(b0);
 
-    //c = a + (b*a+b)*a + (a*b) + (a*b*b*a) + (a*a*a) + b;
-    c = a + 0.5*a + 0.5*a;
-    //c = sin( (a+b) ) + sin(a);
-    //c = atan2(a, b);
+    FORMULA
 
     c0 = std::move(c);
     auto stop = std::chrono::high_resolution_clock::now();
 
-    t2 = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-    
-    std::cout << t2 << " " << sum(c0) << std::endl;
+    t_vector = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
   }
 
-  std::cout << "Processing time ratio: " << t1 / t2 * 100 << "%" << std::endl;
+  std::cout << "Processing time respect to raw for:" << std::endl;  
+  std::cout << "raw for:      " << t_rawfor / t_rawfor <<std::endl;
+  std::cout << "ExprVector:   " << t_exprvector / t_rawfor <<std::endl;
+  std::cout << "valarray:     " << t_valarray / t_rawfor <<std::endl;
+  std::cout << "vector(move): " << t_vector / t_rawfor <<std::endl;
 
   return 0;
 }
