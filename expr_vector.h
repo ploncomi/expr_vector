@@ -286,7 +286,7 @@ public:
   // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<DI,long,DI> start_end_step)
   {
-    long start;
+    long start = 0;
     long end = std::get<1>(start_end_step);
     long step = 1;
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
