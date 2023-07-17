@@ -48,6 +48,8 @@ public:
   {
     return n;
   }
+
+  bool ownsMem() {return buffer == vect.data();}
 };
 
 template<typename T, typename Op1>
@@ -83,6 +85,7 @@ public:
   {
     return n;
   }
+  bool ownsMem() {return false;}
 };
 
 
@@ -448,10 +451,13 @@ public:
     return cont.data() + cont.size();
   }
 
+  std::vector<T> vect() {size_t n = size(); std::vector<T> v(n); for (size_t i=0; i<n; i++) vect[i] = (*this)[i]; return v;}
+
   static ExprVector zeros(size_t n) {ExprVector v(n,0); return v;}
   static ExprVector linspace(T start, T stop, long n) {ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + i * (stop-start)/(n-1); return v;}
-  static ExprVector arange(T start, T stop, T step) {long n = (stop - start) / step + 1; ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
-
+  static ExprVector arange(T start, T stop, T step=1) {long n = (stop - start + step - 1) / step; if (n<=0) return ExprVector(0); ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
+  static ExprVector arange(T stop) {return arange(0, stop, 1);}
+  static ExprVector iota(T start, T stop) {return arange(start, stop);}
 };
 
 template <typename T, typename Cont>
