@@ -448,6 +448,10 @@ public:
     return cont.data() + cont.size();
   }
 
+  static ExprVector zeros(size_t n) {ExprVector v(n,0); return v;}
+  static ExprVector linspace(T start, T stop, long n) {ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + i * (stop-start)/(n-1); return v;}
+  static ExprVector arange(T start, T stop, T step) {long n = (stop - start) / step + 1; ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
+
 };
 
 template <typename T, typename Cont>
@@ -698,3 +702,5 @@ ADD_EXPR_VECT_FN_1_ARG(ExprVectorSin, sin)
 ADD_EXPR_VECT_FN_1_ARG(ExprVectorCos, cos)
 
 ADD_EXPR_VECT_FN_2_ARG(ExprVectorAtan2, atan2)
+
+
