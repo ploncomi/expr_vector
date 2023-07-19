@@ -155,6 +155,8 @@ public:
       cont[i] = (other.begin())[i];
   }
 
+  operator ExprVector<T, BuffData<T>>() const {ExprVector<T, BuffData<T>> x; x = *this; return x;}
+
   // assignment operator for ExprVector of different type
   template<typename T2, typename R2>
   ExprVector& operator=(const ExprVector<T2, R2>& other)
