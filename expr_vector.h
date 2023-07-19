@@ -454,7 +454,7 @@ public:
     return cont.data() + cont.size();
   }
 
-  std::vector<T> vect() {size_t n = size(); std::vector<T> v(n); for (size_t i=0; i<n; i++) vect[i] = (*this)[i]; return v;}
+  std::vector<T> vect() {size_t n = size(); std::vector<T> v(n); for (size_t i=0; i<n; i++) v[i] = (*this)[i]; return v;}
 
   static ExprVector zeros(size_t n) {ExprVector v(n,0); return v;}
   static ExprVector linspace(T start, T stop, long n) {ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + i * (stop-start)/(n-1); return v;}
@@ -462,7 +462,8 @@ public:
   static ExprVector arange(T stop) {return arange(0, stop, 1);}
   static ExprVector iota(T start, T stop) {return arange(start, stop);}
 
-  static void plot(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; system(ss.str().c_str());}
+  static void plot(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; if(system(ss.str().c_str())==-1) std::cout << "Python was not found for plotting" << std::endl;}
+  static void plot(const std::vector<T>& x, const std::vector<T>& y) {ExprVector xx; ExprVector yy; xx.setBuffer(x.data(), x.size()); yy.setBuffer(y.data(), y.size());std::stringstream ss; ss << "python -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << xx << ", " << yy <<"); plt.show()\""; if(system(ss.str().c_str())==-1) std::cout << "Python was not found for plotting" << std::endl;}
 };
 
 template <typename T, typename Cont>
