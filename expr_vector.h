@@ -12,6 +12,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <sstream>
 
 // Start of main classes for ExprVector
 
@@ -458,6 +459,8 @@ public:
   static ExprVector arange(T start, T stop, T step=1) {long n = (stop - start + step - 1) / step; if (n<=0) return ExprVector(0); ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
   static ExprVector arange(T stop) {return arange(0, stop, 1);}
   static ExprVector iota(T start, T stop) {return arange(start, stop);}
+
+  static void plot(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; system(ss.str().c_str());}
 };
 
 template <typename T, typename Cont>
