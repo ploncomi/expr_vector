@@ -12,11 +12,19 @@ ExprVector<double> a;
 a.setBuffer(v.data(), v.size());
 ```
 
-Also it supports using of python-like slices `{start,end,step}`:
+It supports using of python-like slices `{start,end,step}`:
 
 ```
 using namespace expr_vector_default_index;
 
 // c[0:-1:2] = a[0:-1:2] + b[1::2]
 c[{0,-1,2}] = a[{0,-1,2}] + b[{1,_,2}];
+```
+
+Also, if python/matplotlib is present, the arrays can be plot:
+
+```
+  ExprVector<double> x = ExprVector<double>::arange(0, 40, 0.1);
+  ExprVector<double>::plot(x, sin(x) + 0.5*sin(0.5*x));
+
 ```
