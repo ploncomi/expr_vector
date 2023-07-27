@@ -462,8 +462,12 @@ public:
   static ExprVector arange(T stop) {return arange(0, stop, 1);}
   static ExprVector iota(T start, T stop) {return arange(start, stop);}
 
-  static void plot(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; if(system(ss.str().c_str())==-1) std::cout << "Python was not found for plotting" << std::endl;}
-  static void plot(const std::vector<T>& x, const std::vector<T>& y) {ExprVector xx; ExprVector yy; xx.setBuffer(x.data(), x.size()); yy.setBuffer(y.data(), y.size());std::stringstream ss; ss << "python -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << xx << ", " << yy <<"); plt.show()\""; if(system(ss.str().c_str())==-1) std::cout << "Python was not found for plotting" << std::endl;}
+  static bool plot_py (const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; int ret = system(ss.str().c_str()); if (ret == -1 || ret == 32512) return false; return true;}
+  static bool plot_py2(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python2 -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; int ret = system(ss.str().c_str()); if (ret == -1 || ret == 32512) return false; return true;}
+  static bool plot_py3(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python3 -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; int ret = system(ss.str().c_str()); if (ret == -1 || ret == 32512) return false; return true;}
+
+  static void plot(const ExprVector& x, const ExprVector& y) { if (!plot_py(x,y) && !plot_py3(x,y) && !plot_py2(x,y)) std::cout << "Python was not found for plotting" << std::endl;}
+  static void plot(const std::vector<T>& x, const std::vector<T>& y) {ExprVector xx; ExprVector yy; xx.setBuffer(x.data(), x.size()); yy.setBuffer(y.data(), y.size()); plot(x,y);}
 };
 
 template <typename T, typename Cont>
