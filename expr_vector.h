@@ -161,7 +161,7 @@ public:
   template<typename T2, typename R2>
   ExprVector& operator=(const ExprVector<T2, R2>& other)
   {
-    if (cont.size() == 0)
+    if (cont.size() == 0 || cont.size() != other.size())
       cont.resize(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = other[i];
@@ -177,7 +177,7 @@ public:
 
   ExprVector& operator=(const ExprVector& other)
   {
-    if (cont.size() == 0)
+    if (cont.size() == 0 || cont.size() != other.size())
       cont.resize(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = other[i];
@@ -466,7 +466,7 @@ public:
   static bool plot_py2(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python2 -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; int ret = system(ss.str().c_str()); if (ret != 0) return false; return true;}
   static bool plot_py3(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python3 -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; int ret = system(ss.str().c_str()); if (ret != 0) return false; return true;}
 
-  static void plot(const ExprVector& x, const ExprVector& y) { if (!plot_py(x,y) && !plot_py3(x,y) && !plot_py2(x,y)) std::cout << "python+matplotlib was not found for plotting" << std::endl;}
+  static void plot(const ExprVector& x, const ExprVector& y) { if (!plot_py(x,y) && !plot_py3(x,y) && !plot_py2(x,y)) std::cout << "python+matplotlib was not found for plotting, or too much points to plot" << std::endl;}
   static void plot(const std::vector<T>& x, const std::vector<T>& y) {ExprVector xx; ExprVector yy; xx.setBuffer(x.data(), x.size()); yy.setBuffer(y.data(), y.size()); plot(x,y);}
 };
 
