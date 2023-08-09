@@ -4,6 +4,9 @@
 // NOTE: In g++, compile with -O3
 // NOTE: In msvc, compile with /std:c++14 /O2 /EHsc. Not using /EHsc will cause the code to crash
 
+#ifndef EXPR_VECTOR_H_PL_
+#define EXPR_VECTOR_H_PL_
+
 #include <vector>
 #include <cstddef>
 #include <stdexcept>
@@ -720,3 +723,4 @@ ADD_EXPR_VECT_FN_1_ARG(ExprVectorCos, cos)
 ADD_EXPR_VECT_FN_2_ARG(ExprVectorAtan2, atan2)
 
 
+#endif // EXPR_VECTOR_H_PL_
