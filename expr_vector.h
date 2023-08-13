@@ -28,11 +28,11 @@ public:
   T* buffer;
   size_t n;
 
-  BuffData<T>() {n=0;}
-  BuffData<T>(const BuffData<T>& other) {vect.resize(other.n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
+  BuffData() {n=0;}
+  BuffData(const BuffData<T>& other) {vect.resize(other.n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
 
-  BuffData<T>(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
-  BuffData<T>(size_t n, const T initialValue) {vect = std::vector<T>(n, initialValue); buffer = vect.data(); this->n = vect.size();}
+  BuffData(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
+  BuffData(size_t n, const T initialValue) {vect = std::vector<T>(n, initialValue); buffer = vect.data(); this->n = vect.size();}
   
   void resize(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
 
