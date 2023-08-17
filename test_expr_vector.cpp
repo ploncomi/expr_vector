@@ -51,5 +51,17 @@ int main()
 
   std::cout << "Number of zeros: " << f.count(0) << std::endl;
 
+  // Vector slices can work also with other datatypes (they are general)
+
+  ExprVector<std::string> s1(10), s2(5);
+
+  for (int i=0; i<10; i++)
+    s1[i] = "string " + std::to_string(i);
+
+  s2[{_,_,_}] = s1[{_,_,2}];
+
+  for (int i=0; i<5; i++)
+    std::cout << s2[i] << std::endl;
+
   return 0;
 }
