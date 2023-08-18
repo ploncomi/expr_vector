@@ -487,6 +487,19 @@ std::ostream& operator<<(std::ostream& os, const ExprVector<T,Cont> & ev)
   return os;
 }
 
+template <typename Cont>
+std::ostream& operator<<(std::ostream& os, const ExprVector<std::string,Cont> & ev)
+{
+  os << "[\"";
+  if (ev.size() > 0)
+  {
+    os << ev[0];
+    for (size_t i = 1; i < ev.size(); i++)
+      os << "\", \"" << ev[i];
+  }
+  os << "\"]";
+  return os;
+}
 
 
 #define ADD_EXPR_VECT_OPERATOR_2_ARGS(NAME, OP)                                   \

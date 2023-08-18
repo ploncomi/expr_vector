@@ -60,8 +60,7 @@ int main()
 
   s2[{_,_,_}] = s1[{_,_,2}];
 
-  for (int i=0; i<5; i++)
-    std::cout << s2[i] << std::endl;
+  std::cout << s2 << std::endl;
 
   return 0;
 }
