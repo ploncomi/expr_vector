@@ -16,8 +16,21 @@
 #include <iostream>
 #include <limits>
 #include <sstream>
+#include <memory>
 
 // Start of main classes for ExprVector
+
+/**  ExprVectorException represents an exception related to incorrect ExprVector resizing **/
+class ExprVectorException : public std::exception
+{
+public:
+  ExprVectorException(const char* what_arg) { std::cerr << what_arg << std::endl; what_ptr_ = std::make_shared<std::string>(what_arg);}
+
+  const char *what() const noexcept override {return what_ptr_->c_str();}
+
+  std::shared_ptr<std::string> what_ptr_;
+};
+
 
 /** BuffData represents a buffer, which can be a std::vector<T> or a buffer pointer T* */
 template<typename T>
@@ -28,13 +41,13 @@ public:
   T* buffer;
   size_t n;
 
-  BuffData() {n=0;}
+  BuffData() : buffer(nullptr), n(0) {}
   BuffData(const BuffData& other) {vect.resize(other.n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
 
   BuffData(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
   BuffData(size_t n, const T initialValue) {vect = std::vector<T>(n, initialValue); buffer = vect.data(); this->n = vect.size();}
   
-  void resize(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
+  void resize(size_t n) {if (n>0 && buffer != vect.data()) throw ExprVectorException("ExprVectorException: ExprVector with external buffer cannot be resized"); vect.resize(n); buffer = vect.data(); this->n = vect.size();}
 
   inline T operator[](const std::size_t i) const
   {
@@ -52,8 +65,6 @@ public:
   {
     return n;
   }
-
-  bool ownsMem() {return buffer == vect.data();}
 };
 
 template<typename T, typename Op1>
@@ -69,11 +80,9 @@ public:
   BuffDataStrided(Op1& a, long start, long end, long step) : op1(a), start(start), end(end), step(step)
   {
     n = (std::abs(end-start) + abs(step)-1) / abs(step);
-
-    //std::cout << start << ":" << end << ":" << step << " " << " n = " << n << std::endl;
   }
 
-  void resize(size_t n) {std::cerr << "Error: BuffDataStrided::resize() called" << std::endl;}
+  void resize(size_t n) {throw ExprVectorException("ExprVectorException: sliced ExprVector cannot be resized");}
 
   inline T operator[](const std::size_t i) const
   {
@@ -89,7 +98,6 @@ public:
   {
     return n;
   }
-  bool ownsMem() {return false;}
 };
 
 
@@ -141,6 +149,7 @@ public:
   ExprVector() {}
   void setBuffer(T* buffer, size_t n) {cont.buffer = buffer; cont.n = n;}
   void setBuffer(const T* buffer, size_t n) {cont.buffer = const_cast<T*>(buffer); cont.n = n;}
+  void unsetBuffer() {cont.n = 0;}
 
   // ExprVector with initial size
   ExprVector(const std::size_t n) : cont(n) {}
@@ -171,7 +180,6 @@ public:
     return *this;
   }
 
-
   void operator=(const T& val)
   {
     for (std::size_t i = 0; i < cont.size(); ++i)
@@ -189,7 +197,8 @@ public:
 
   ExprVector& operator=(std::initializer_list<T> other)
   {
-    cont.resize(other.size());
+    if (cont.size() == 0 || cont.size() != other.size())
+      cont.resize(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = (other.begin())[i];
     return *this;
@@ -317,8 +326,6 @@ public:
       end += size();
     return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
   }
-
-
 
   // Slice of ExprVector
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::tuple<long,DI,DI> start_end_step)
