@@ -39,7 +39,7 @@ int main()
 
   std::cout << "Sum (no external buffer): " << f.sum() << std::endl;
 
-  // Using strides (python-like format: {start, end, stride})
+  // Using slices (python-like format: {start, end, step})
   // If "start" or "end" are lesser than 0, they count back from the array's ending
   // Use the symbol _ for a missing index. Example: [::2] transforms into {_,_,2}
   d = 0;
