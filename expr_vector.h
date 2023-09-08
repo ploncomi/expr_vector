@@ -148,7 +148,7 @@ public:
   // Empty constructed ExprVector must be given a buffer before being used
   ExprVector() {}
   void setBuffer(T* buffer, size_t n) {cont.buffer = buffer; cont.n = n;}
-  void setBuffer(const T* buffer, size_t n) {cont.buffer = const_cast<T*>(buffer); cont.n = n;}
+  void setBuffer(const T* buffer, size_t n) {cont.buffer = const_cast<T*>(buffer); cont.n = n;}  //!< Please don't modify an ExprVector after using this function
   void unsetBuffer() {cont.n = 0;}
 
   // ExprVector with initial size
