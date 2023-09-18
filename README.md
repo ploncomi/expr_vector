@@ -21,7 +21,7 @@ using namespace expr_vector_default_index;
 c[{0,-1,2}] = a[{0,-1,2}] + b[{1,_,2}];
 ```
 
-Also, if python/matplotlib is present, the arrays can be plot (however, the plot must have few points):
+Also, if python/matplotlib is present, the arrays can be plotted (however, the plot must have few points):
 
 ```
   ExprVector<double> x = ExprVector<double>::arange(0, 40, 0.1);
