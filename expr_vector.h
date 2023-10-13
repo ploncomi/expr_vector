@@ -599,15 +599,44 @@ operator OP(const ExprVector<T, R1>& a, T b)                                    
 
 
 
-#define ADD_EXPR_VECT_PRE_DOUBLE(NAME, OP)                                        \
-template<typename T, typename Op2, typename std::enable_if<!std::is_same<T,double>::value, nullptr_t>::type = nullptr>   \
+#define ADD_EXPR_VECT_PRE_SCALAR(NAME, OP, TYPE)                                        \
+template<typename T, typename Op2, typename std::enable_if<!std::is_same<T,TYPE>::value, nullptr_t>::type = nullptr>   \
 class NAME                                                                        \
 {                                                                                 \
-  const double val1;                                                              \
+  const TYPE val1;                                                                \
   const Op2& op2;                                                                 \
                                                                                   \
 public:                                                                           \
-  NAME(double a, const Op2& b) : val1(a), op2(b) {}                               \
+  NAME(TYPE a, const Op2& b) : val1(a), op2(b) {}                                 \
+                                                                                  \
+  inline T operator[](const std::size_t i) const                                  \
+  {                                                                               \
+    return val1 OP op2[i];                                                        \
+  }                                                                               \
+                                                                                  \
+  inline std::size_t size() const                                                 \
+  {                                                                               \
+    return op2.size();                                                            \
+  }                                                                               \
+};                                                                                \
+                                                                                  \
+template<typename T, typename R2, typename std::enable_if<!std::is_same<T,TYPE>::value, nullptr_t>::type = nullptr>    \
+inline ExprVector<T, NAME<T, R2> >                                                \
+operator OP(TYPE a, const ExprVector<T, R2>& b)                                   \
+{                                                                                 \
+  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.data()));                  \
+}                                                                                 \
+
+
+#define ADD_EXPR_VECT_POST_SCALAR(NAME, OP, TYPE)                                 \
+template<typename T, typename Op2, typename std::enable_if<!std::is_same<T,TYPE>::value, nullptr_t>::type = nullptr>   \
+class NAME                                                                        \
+{                                                                                 \
+  const Op2& op2;                                                                 \
+  const TYPE val1;                                                                \
+                                                                                  \
+public:                                                                           \
+  NAME(TYPE a, const Op2& b) : val1(a), op2(b) {}                                 \
                                                                                   \
   inline T operator[](const std::size_t i) const                                  \
   {                                                                               \
@@ -622,39 +651,11 @@ public:                                                                         
                                                                                   \
 template<typename T, typename R2>                                                 \
 inline ExprVector<T, NAME<T, R2> >                                                \
-operator OP(double a, const ExprVector<T, R2>& b)                                 \
+operator OP(const ExprVector<T, R2>& b, TYPE a)                                   \
 {                                                                                 \
   return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.data()));                  \
 }                                                                                 \
-
-
-#define ADD_EXPR_VECT_POST_DOUBLE(NAME, OP)                                        \
-template<typename T, typename Op2, typename std::enable_if<!std::is_same<T,double>::value, nullptr_t>::type = nullptr>   \
-class NAME                                                                        \
-{                                                                                 \
-  const Op2& op2;                                                                 \
-  const double val1;                                                              \
                                                                                   \
-public:                                                                           \
-  NAME(double a, const Op2& b) : val1(a), op2(b) {}                               \
-                                                                                  \
-  inline T operator[](const std::size_t i) const                                  \
-  {                                                                               \
-    return op2[i] OP val1;                                                        \
-  }                                                                               \
-                                                                                  \
-  inline std::size_t size() const                                                 \
-  {                                                                               \
-    return op2.size();                                                            \
-  }                                                                               \
-};                                                                                \
-                                                                                  \
-template<typename T, typename R2>                                                 \
-inline ExprVector<T, NAME<T, R2> >                                                \
-operator OP(double a, const ExprVector<T, R2>& b)                                 \
-{                                                                                 \
-  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.data()));                  \
-}                                                                                 \
 
 // This is not too much faster than vectors because of function calls..
 #define ADD_EXPR_VECT_FN_1_ARG(NAME, fn)                                   \
@@ -734,8 +735,11 @@ ADD_EXPR_VECT_POST_OP(ExprVectPostSubtr, -)
 ADD_EXPR_VECT_POST_OP(ExprVectPostMult, *)
 ADD_EXPR_VECT_POST_OP(ExprVectPostDiv, /)
 
-ADD_EXPR_VECT_PRE_DOUBLE(ExprVectPreMultDouble, *)
-ADD_EXPR_VECT_POST_DOUBLE(ExprVectPostMultDouble, *)
+ADD_EXPR_VECT_PRE_SCALAR(ExprVectPreMultDouble, *, double)
+ADD_EXPR_VECT_POST_SCALAR(ExprVectPostMultDouble, *, double)
+
+ADD_EXPR_VECT_PRE_SCALAR(ExprVectPreMultInt, *, int)
+ADD_EXPR_VECT_POST_SCALAR(ExprVectPostMultInt, *, int)
 
 ADD_EXPR_VECT_FN_1_ARG(ExprVectorSin, sin)
 ADD_EXPR_VECT_FN_1_ARG(ExprVectorCos, cos)
