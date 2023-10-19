@@ -36,6 +36,9 @@ double operator*(PointXYZ p1, PointXYZ p2)
   return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
 }
 
+
+double abs(PointXYZ p) {return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);}
+
 std::ostream& operator<<(std::ostream& os, const PointXYZ& p) {os << "(" << p.x << "," << p.y << "," << p.z << ")"; return os;}
 
 
@@ -44,6 +47,7 @@ int main()
     ExprVector<PointXYZ> a(10, PointXYZ(1,2,3)), b;
     b = 2 * a / sqrt(a*a);
     std::cout << b << std::endl;
+    std::cout << abs(b) << std::endl;
 
     return 0;
 }
