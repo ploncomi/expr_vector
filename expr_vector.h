@@ -34,36 +34,33 @@ public:
 
 /** BuffData represents a buffer, which can be a std::vector<T> or a buffer pointer T* */
 template<typename T>
-class BuffData
+class BuffDataExt
 {
+  T* buffer_;
+  size_t n_;
+
 public:
-  std::vector<T> vect;
-  T* buffer;
-  size_t n;
+  BuffDataExt() : buffer_(nullptr), n_(0) {}
+  BuffDataExt(const BuffDataExt& other) = delete;
 
-  BuffData() : buffer(nullptr), n(0) {}
-  BuffData(const BuffData& other) {vect.resize(other.n); for (size_t i=0; i<vect.size(); i++) vect[i] = other[i]; buffer = vect.data(); this->n = vect.size();}
-
-  BuffData(size_t n) {vect.resize(n); buffer = vect.data(); this->n = vect.size();}
-  BuffData(size_t n, const T initialValue) {vect = std::vector<T>(n, initialValue); buffer = vect.data(); this->n = vect.size();}
-  
-  void resize(size_t n) {if (n>0 && buffer != vect.data()) throw ExprVectorException("ExprVectorException: ExprVector with external buffer cannot be resized"); vect.resize(n); buffer = vect.data(); this->n = vect.size();}
+  void setBuffer(T* buffer, size_t n) {buffer_=buffer; n_=n;}
+  void setBuffer(const T* buffer, size_t n) {buffer_=const_cast<T*>(buffer); n_=n;}
 
   inline T operator[](const std::size_t i) const
   {
-    return buffer[i];
+    return buffer_[i];
   }
 
   inline T& operator[](const std::size_t i)
   {
-    return buffer[i];
+    return buffer_[i];
   }
   
-  inline T* data() {return buffer;}
+  inline T* data() {return buffer_;}
   
   inline std::size_t size() const
   {
-    return n;
+    return n_;
   }
 };
 
@@ -137,7 +134,7 @@ namespace expr_vector_default_index
 
 
 /** ExprVector is the main class which represents a vector/buffer using expression templates */
-template<typename T, typename Cont = BuffData<T> >
+template<typename T, typename Cont = std::vector<T>>  //BuffDataExt<T> >
 class ExprVector
 {
 public:
@@ -147,9 +144,18 @@ public:
 
   // Empty constructed ExprVector must be given a buffer before being used
   ExprVector() {}
-  void setBuffer(T* buffer, size_t n) {cont.buffer = buffer; cont.n = n;}
-  void setBuffer(const T* buffer, size_t n) {cont.buffer = const_cast<T*>(buffer); cont.n = n;}  //!< Please don't modify an ExprVector after using this function
-  void unsetBuffer() {cont.n = 0;}
+  
+  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(T2* buffer, size_t n) {cont.setBuffer(buffer,n);}
+
+  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(const T2* buffer, size_t n) {cont.setBuffer(buffer,n);}  //!< Please don't modify an ExprVector after using this function
+
+  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
+
+  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(const T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
 
   // ExprVector with initial size
   ExprVector(const std::size_t n) : cont(n) {}
@@ -160,17 +166,27 @@ public:
   // Constructor for underlying container
   ExprVector(const Cont& other) : cont(other) {}
 
-  ExprVector(std::initializer_list<T> other)
+  template <typename T2, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  ExprVector(std::initializer_list<T2> other)
   {
     cont.resize(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = (other.begin())[i];
   }
 
-  operator ExprVector<T, BuffData<T>>() const {ExprVector<T, BuffData<T>> x; x = *this; return x;}
+  operator ExprVector<T, std::vector<T>>() const {ExprVector<T, std::vector<T>> x; x = *this; return x;}
 
   // assignment operator for ExprVector of different type
-  template<typename T2, typename R2>
+  template<typename T2, typename R2, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  ExprVector& operator=(const ExprVector<T2, R2>& other)
+  {
+    for (std::size_t i = 0; i < cont.size(); ++i)
+      cont[i] = other[i];
+    return *this;
+  }
+
+
+  template<typename T2, typename R2, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
   ExprVector& operator=(const ExprVector<T2, R2>& other)
   {
     if (cont.size() == 0 || cont.size() != other.size())

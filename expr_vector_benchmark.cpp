@@ -73,7 +73,8 @@ double sum(const std::vector<double>& a)
 
 int main()
 {
-  size_t n = 10000000;
+  size_t n = 10000;
+  size_t n2 = 3;
   std::vector<double> a0(n), b0(n), c0(n);
 
   for (size_t i = 0; i < n; i++)
@@ -108,13 +109,16 @@ int main()
   // valarray
   {
     auto start = std::chrono::high_resolution_clock::now();
-    std::valarray<double> a(n), b(n), c(n);
-    for (size_t i=0; i<n; i++)
-      a[i] = a0[i];
-    for (size_t i=0; i<n; i++)
-      b[i] = b0[i];
+    for (size_t u=0; u<n2; u++)
+    {
+      std::valarray<double> a(n), b(n), c(n);
+      for (size_t i=0; i<n; i++)
+        a[i] = a0[i];
+      for (size_t i=0; i<n; i++)
+        b[i] = b0[i];
 
-    FORMULA
+      FORMULA
+    }
 
     auto stop = std::chrono::high_resolution_clock::now();
 
@@ -124,15 +128,17 @@ int main()
   // ExprVector
   {
     auto start = std::chrono::high_resolution_clock::now();
-    ExprVector<double> a, b, c;
     if (c0.size() == 0)
       c0.resize(n);
-    a.setBuffer(a0.data(), a0.size());  // Optional
-    b.setBuffer(b0.data(), b0.size());  // Optional
-    c.setBuffer(c0.data(), c0.size());  // Optional
+    for (size_t u=0; u<n2; u++)
+    {
+      ExprVector<double, BuffDataExt<double>> a, b, c;
+      a.setBuffer(a0.data(), a0.size());
+      b.setBuffer(b0.data(), b0.size());
+      c.setBuffer(c0.data(), c0.size());
 
-    FORMULA
-
+      FORMULA
+    }
     auto stop = std::chrono::high_resolution_clock::now();
 
     t_exprvector = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
@@ -143,11 +149,13 @@ int main()
     std::vector<double> a=a0, b=b0;
     std::vector<double> c(n);
     auto start = std::chrono::high_resolution_clock::now();
-    for (size_t i=0; i<n; i++)
+    for (size_t u=0; u<n2; u++)
     {
-      FORMULA_FOR
+      for (size_t i=0; i<n; i++)
+      {
+        FORMULA_FOR
+      }
     }
-
     auto stop = std::chrono::high_resolution_clock::now();
 
     t_rawfor = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
@@ -159,9 +167,10 @@ int main()
     std::vector<double> a, b, c(n);
     a = std::move(a0);
     b = std::move(b0);
-
-    FORMULA
-
+    for (size_t u=0; u<n2; u++)
+    {
+      FORMULA
+    }
     c0 = std::move(c);
     auto stop = std::chrono::high_resolution_clock::now();
 

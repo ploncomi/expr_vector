@@ -16,7 +16,7 @@ int main()
     b0[i] = 2*rand()+1;
   
   // Providing external buffer
-  ExprVector<double> a, b, c;
+  ExprVector<double, BuffDataExt<double>> a, b, c;
 
   a.setBuffer(a0.data(), a0.size());
   b.setBuffer(b0.data(), b0.size());
