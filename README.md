@@ -8,7 +8,7 @@ It aims to be similar to std::valarray, but the option for providing an external
 ```
 std::vector<double> v(n);
 ...
-ExprVector<double> a;
+ExprVector<double, BuffDataExt<double>> a;  // BuffDataExt<double> for using external memory
 a.setBuffer(v.data(), v.size());
 ```
 
