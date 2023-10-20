@@ -11,33 +11,33 @@ public:
   double x,y,z;
 };
 
-PointXYZ operator+(PointXYZ p1, PointXYZ p2)
+inline PointXYZ operator+(PointXYZ p1, PointXYZ p2)
 {
   return PointXYZ{p1.x+p2.x, p1.y+p2.y, p1.z+p2.z};
 }
 
-PointXYZ operator*(double d, PointXYZ p)
+inline PointXYZ operator*(double d, PointXYZ p)
 {
   return PointXYZ{d*p.x, d*p.y, d*p.z};
 }
 
-PointXYZ operator*(PointXYZ p, double d)
+inline PointXYZ operator*(PointXYZ p, double d)
 {
   return PointXYZ{p.x*d, p.y*d, p.z*d};
 }
 
-PointXYZ operator/(PointXYZ p, double d)
+inline PointXYZ operator/(PointXYZ p, double d)
 {
   return PointXYZ{p.x/d, p.y/d, p.z/d};
 }
 
-double operator*(PointXYZ p1, PointXYZ p2)
+inline double operator*(PointXYZ p1, PointXYZ p2)
 {
   return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
 }
 
 
-double abs(PointXYZ p) {return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);}
+inline double abs(PointXYZ p) {return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);}
 
 std::ostream& operator<<(std::ostream& os, const PointXYZ& p) {os << "(" << p.x << "," << p.y << "," << p.z << ")"; return os;}
 
