@@ -62,6 +62,9 @@ public:
   {
     return n_;
   }
+
+  inline size_t max_size() {return 0;}  // Cannot allocate space
+  void resize(size_t n) {}
 };
 
 template<typename T, typename Op1>
@@ -79,8 +82,6 @@ public:
     n = (std::abs(end-start) + abs(step)-1) / abs(step);
   }
 
-  void resize(size_t n) {throw ExprVectorException("ExprVectorException: sliced ExprVector cannot be resized");}
-
   inline T operator[](const std::size_t i) const
   {
     return op1[start + i*step];
@@ -95,6 +96,9 @@ public:
   {
     return n;
   }
+
+  inline size_t max_size() {return 0;}  // Cannot allocate space
+  void resize(size_t n) {}
 };
 
 
@@ -165,30 +169,28 @@ public:
   operator ExprVector<T, std::vector<T>>() const {ExprVector<T, std::vector<T>> x; x = *this; return x;}
 
 
-  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void resize(size_t n) {cont.resize(n);}
 
-  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void resize(size_t n) = delete; //   // NOTE: This function is not available when using ExprVector<T,BuffDataExt<T>>
 
 
-  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void setBuffer(T2* buffer, size_t n) {cont.setBuffer(buffer,n);}
 
-  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void setBuffer(const T2* buffer, size_t n) {cont.setBuffer(buffer,n);}  //!< Please don't modify an ExprVector after using this function
 
-  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void setBuffer(T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
 
-  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void setBuffer(const T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
 
 
-
-
   // assignment operator for ExprVector of different type
-  template<typename T2, typename R2, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
   ExprVector& operator=(const ExprVector<T2, R2>& other)
   {
     for (std::size_t i = 0; i < cont.size(); ++i)
@@ -196,12 +198,27 @@ public:
     return *this;
   }
 
-
-  template<typename T2, typename R2, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  // assignment operator for ExprVector of different type
+  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
   ExprVector& operator=(const ExprVector<T2, R2>& other)
   {
     if (cont.size() == 0 || cont.size() != other.size())
       cont.resize(other.size());
+    for (std::size_t i = 0; i < cont.size(); ++i)
+      cont[i] = other[i];
+    return *this;
+  }
+
+  // assignment operator for ExprVector of same type
+  ExprVector& operator=(const ExprVector& other)
+  {
+    if (cont.size() == 0 || cont.size() != other.size())
+    {
+      if (cont.max_size() > 0)
+        cont.resize(other.size());
+      else
+        throw ExprVectorException("ExprVector::operator=(): requested to resize an unresizable ExprVector");
+    }
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = other[i];
     return *this;
@@ -211,15 +228,6 @@ public:
   {
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = val;
-  }
-
-  ExprVector& operator=(const ExprVector& other)
-  {
-    if (cont.size() == 0 || cont.size() != other.size())
-      cont.resize(other.size());
-    for (std::size_t i = 0; i < cont.size(); ++i)
-      cont[i] = other[i];
-    return *this;
   }
 
   ExprVector& operator=(std::initializer_list<T> other)
