@@ -145,18 +145,6 @@ public:
   // Empty constructed ExprVector must be given a buffer before being used
   ExprVector() {}
   
-  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(T2* buffer, size_t n) {cont.setBuffer(buffer,n);}
-
-  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(const T2* buffer, size_t n) {cont.setBuffer(buffer,n);}  //!< Please don't modify an ExprVector after using this function
-
-  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
-
-  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(const T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
-
   // ExprVector with initial size
   ExprVector(const std::size_t n) : cont(n) {}
 
@@ -175,6 +163,29 @@ public:
   }
 
   operator ExprVector<T, std::vector<T>>() const {ExprVector<T, std::vector<T>> x; x = *this; return x;}
+
+
+  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void resize(size_t n) {cont.resize(n);}
+
+  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void resize(size_t n) = delete; //   // NOTE: This function is not available when using ExprVector<T,BuffDataExt<T>>
+
+
+  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(T2* buffer, size_t n) {cont.setBuffer(buffer,n);}
+
+  template <typename T2, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(const T2* buffer, size_t n) {cont.setBuffer(buffer,n);}  //!< Please don't modify an ExprVector after using this function
+
+  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
+
+  template <typename T2, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  void setBuffer(const T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
+
+
+
 
   // assignment operator for ExprVector of different type
   template<typename T2, typename R2, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
@@ -482,6 +493,8 @@ public:
 
   std::vector<T> vect() {size_t n = size(); std::vector<T> v(n); for (size_t i=0; i<n; i++) v[i] = (*this)[i]; return v;}
 
+  ExprVector<T,BuffDataExt<T>> toExt() {ExprVector<T,BuffDataExt<T>> ret; ret.setBuffer(data(), size()); return ret;}
+
   static ExprVector zeros(size_t n) {ExprVector v(n,0); return v;}
   static ExprVector linspace(T start, T stop, long n) {ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + i * (stop-start)/(n-1); return v;}
   static ExprVector arange(T start, T stop, T step=1) {long n = (stop - start + step - 1) / step; if (n<=0) return ExprVector(0); ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
@@ -493,7 +506,7 @@ public:
   static bool plot_py3(const ExprVector& x, const ExprVector& y) {std::stringstream ss; ss << "python3 -c \"" << "import matplotlib.pyplot as plt; plt.plot(" << x << ", " << y <<"); plt.show()\""; int ret = system(ss.str().c_str()); if (ret != 0) return false; return true;}
 
   static void plot(const ExprVector& x, const ExprVector& y) { if (!plot_py(x,y) && !plot_py3(x,y) && !plot_py2(x,y)) std::cout << "python+matplotlib was not found for plotting, or too much points to plot" << std::endl;}
-  static void plot(const std::vector<T>& x, const std::vector<T>& y) {ExprVector xx; ExprVector yy; xx.setBuffer(x.data(), x.size()); yy.setBuffer(y.data(), y.size()); plot(x,y);}
+  static void plot(const std::vector<T>& x, const std::vector<T>& y) {ExprVector<T, BuffDataExt<T>> xx; ExprVector<T, BuffDataExt<T>> yy; xx.setBuffer(x.data(),x.size()); yy.setBuffer(y.data(),y.size()); plot(xx,yy);}
 };
 
 template <typename T, typename Cont>
