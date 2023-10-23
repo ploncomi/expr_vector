@@ -62,9 +62,6 @@ public:
   {
     return n_;
   }
-
-  inline size_t max_size() {return 0;}  // Cannot allocate space
-  void resize(size_t n) {}
 };
 
 template<typename T, typename Op1>
@@ -96,9 +93,6 @@ public:
   {
     return n;
   }
-
-  inline size_t max_size() {return 0;}  // Cannot allocate space
-  void resize(size_t n) {}
 };
 
 
@@ -188,6 +182,15 @@ public:
   template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void setBuffer(const T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
 
+  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  void try_resize_if_needed(size_t n)
+  {
+    if (cont.size() == 0 || cont.size() != n)
+      cont.resize(n);
+  }
+
+  template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  void try_resize_if_needed(size_t n) {}
 
   // assignment operator for ExprVector of different type
   template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
@@ -210,6 +213,7 @@ public:
   }
 
   // assignment operator for ExprVector of same type
+  /*
   ExprVector& operator=(const ExprVector& other)
   {
     if (cont.size() == 0 || cont.size() != other.size())
@@ -219,6 +223,14 @@ public:
       else
         throw ExprVectorException("ExprVector::operator=(): requested to resize an unresizable ExprVector");
     }
+    for (std::size_t i = 0; i < cont.size(); ++i)
+      cont[i] = other[i];
+    return *this;
+  }
+  */
+  ExprVector& operator=(const ExprVector& other)
+  {
+    try_resize_if_needed(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = other[i];
     return *this;
@@ -258,7 +270,7 @@ public:
   }
 
   // Negative of ExprVector
-  inline ExprVector<T, ExprVectorNeg<T, Cont> > operator-() {return ExprVector<T, ExprVectorNeg<T, Cont>>(ExprVectorNeg<T, Cont>(data()));}
+  inline ExprVector<T, ExprVectorNeg<T, Cont> > operator-() {return ExprVector<T, ExprVectorNeg<T, Cont>>(ExprVectorNeg<T, Cont>(contents()));}
 
 #if __GNUC__ < 6 || (__GNUC__ == 6 && __GNUC_MINOR__ <= 1)  // Old compiler
   inline ExprVector<T, BuffDataStrided<T, Cont>> operator[](std::initializer_list<long> start_end_step)
@@ -301,7 +313,7 @@ public:
       if (start != _ && end != _)
         return operator[](std::make_tuple(start,end));  //return [](std::make_tuple<long,long>(start,end));
     }
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) ); // This could not be executed
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) ); // This could not be executed
   }
 #endif  
 
@@ -312,7 +324,7 @@ public:
     long start = 0;
     long end = size();
     long step = 1;
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -333,7 +345,7 @@ public:
       end = -1;
     }
 
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -342,7 +354,7 @@ public:
     long start = 0;
     long end = std::get<1>(start_end_step);
     long step = 1;
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -359,7 +371,7 @@ public:
 
     while (end < 0)
       end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -368,7 +380,7 @@ public:
     long start = std::get<0>(start_end_step);
     long end = size();
     long step = 1;
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -385,7 +397,7 @@ public:
 
     while (start < 0)
       start += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -398,7 +410,7 @@ public:
       start += size();
     while (end < 0)
       end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }  
 
   // Slice of ExprVector
@@ -411,7 +423,7 @@ public:
       start += size();
     while (end < 0)
       end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -421,7 +433,7 @@ public:
     long end = size();
     long step = 1;
 
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -431,7 +443,7 @@ public:
     long end = std::get<1>(start_end);
     long step = 1;
 
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -441,7 +453,7 @@ public:
     long end = size();
     long step = 1;
 
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   // Slice of ExprVector
@@ -454,7 +466,7 @@ public:
       start += size();
     while (end < 0)
       end += size();
-    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(data(), start, end, step) );
+    return ExprVector<T, BuffDataStrided<T, Cont>>( BuffDataStrided<T, Cont>(contents(), start, end, step) );
   }
 
   inline T sum()
@@ -477,16 +489,20 @@ public:
     return amount;
   }
 
-
   // returns the underlying data
-  inline const Cont& data() const
+  inline const Cont& contents() const
   {
     return cont;
   }
 
-  inline Cont& data()
+  inline Cont& contents()
   {
     return cont;
+  }
+
+  inline T* data()
+  {
+    return cont.data();
   }
 
   inline T* begin()
@@ -574,7 +590,7 @@ template<typename T, typename R1, typename R2>                                  
 inline ExprVector<typename NAME<T, R1, R2>::type, NAME<T, R1, R2> >                                            \
 operator OP (const ExprVector<T, R1>& a, const ExprVector<T, R2>& b)              \
 {                                                                                 \
-  return ExprVector<typename NAME<T, R1, R2>::type, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.data(), b.data()));   \
+  return ExprVector<typename NAME<T, R1, R2>::type, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.contents(), b.contents()));   \
 }                                                                                 \
 
 
@@ -603,7 +619,7 @@ template<typename T, typename R2>                                               
 inline ExprVector<T, NAME<T, R2> >                                                \
 operator OP(T a, const ExprVector<T, R2>& b)                                      \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.data()));                  \
+  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.contents()));                  \
 }                                                                                 \
 
 
@@ -632,7 +648,7 @@ template<typename T, typename R1>                                               
 inline ExprVector<T, NAME<T, R1> >                                                \
 operator OP(const ExprVector<T, R1>& a, T b)                                      \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R1> >(NAME<T, R1 >(a.data(), b));                  \
+  return ExprVector<T, NAME<T, R1> >(NAME<T, R1 >(a.contents(), b));                  \
 }                                                                                 
 
 
@@ -662,7 +678,7 @@ template<typename T, typename R2, typename std::enable_if<!std::is_same<T,TYPE>:
 inline ExprVector<T, NAME<T, R2> >                                                \
 operator OP(TYPE a, const ExprVector<T, R2>& b)                                   \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.data()));                  \
+  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.contents()));                  \
 }                                                                                 \
 
 
@@ -691,7 +707,7 @@ template<typename T, typename R2>                                               
 inline ExprVector<T, NAME<T, R2> >                                                \
 operator OP(const ExprVector<T, R2>& b, TYPE a)                                   \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.data()));                  \
+  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.contents()));              \
 }                                                                                 \
                                                                                   \
 
@@ -704,10 +720,10 @@ class NAME                                                                 \
   const Op1& op1;                                                          \
                                                                            \
 public:                                                                    \
-  using type = decltype(fn(op1[0]));                                           \
+  using type = decltype(fn(op1[0]));                                       \
   NAME(const Op1& a) : op1(a) {}                                           \
                                                                            \
-  inline type operator[](const std::size_t i) const                           \
+  inline type operator[](const std::size_t i) const                        \
   {                                                                        \
     return fn(op1[i]);                                                     \
   }                                                                        \
@@ -720,10 +736,10 @@ public:                                                                    \
                                                                            \
                                                                            \
 template<typename T, typename R1>                                          \
-ExprVector<typename NAME<T, R1>::type, NAME<T, R1> >                                                \
+ExprVector<typename NAME<T, R1>::type, NAME<T, R1> >                       \
 inline fn (const ExprVector<T, R1>& a)                                     \
 {                                                                          \
-  return ExprVector<typename NAME<T, R1>::type, NAME<T, R1> >(NAME<T, R1>(a.data()));               \
+  return ExprVector<typename NAME<T, R1>::type, NAME<T, R1> >(NAME<T, R1>(a.contents()));      \
 }                                                                          \
 
 
@@ -755,7 +771,7 @@ template<typename T, typename R1, typename R2>                                  
 ExprVector<T, NAME<T, R1, R2> >                                                   \
 inline fn (const ExprVector<T, R1>& a, const ExprVector<T, R2>& b)                \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2>(a.data(), b.data()));    \
+  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2>(a.contents(), b.contents()));    \
 }                                                                                 \
 
 
@@ -818,7 +834,7 @@ template<typename T, typename R1, typename R2>                                  
 inline ExprVector<T, NAME<T, R1, R2> >                                            \
 operator OP (const ExprVector<TYPE, R1>& a, const ExprVector<T, R2>& b)           \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.data(), b.data()));   \
+  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.contents(), b.contents()));   \
 }                                                                                 \
 
 
@@ -849,7 +865,7 @@ template<typename T, typename R1, typename R2>                                  
 inline ExprVector<T, NAME<T, R1, R2> >                                            \
 operator OP (const ExprVector<T, R1>& a, const ExprVector<TYPE, R2>& b)           \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.data(), b.data()));   \
+  return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.contents(), b.contents()));   \
 }                                                                                 \
 
 ADD_EXPR_VECT_PRE_OP_VECT(ExprVectPreMultVectDouble, *, double)
