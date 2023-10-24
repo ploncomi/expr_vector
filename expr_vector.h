@@ -131,6 +131,53 @@ namespace expr_vector_default_index
 };
 
 
+namespace ev
+{
+  template< class... >
+  using void_t = void;
+
+  struct nonesuch {
+      nonesuch() = delete;
+      ~nonesuch() = delete;
+      nonesuch(nonesuch const&) = delete;
+      void operator=(nonesuch const&) = delete;
+  };
+
+  namespace detail {
+  template <class Default, class AlwaysVoid,
+            template<class...> class Op, class... Args>
+  struct detector {
+    using value_t = std::false_type;
+    using type = Default;
+  };
+   
+  template <class Default, template<class...> class Op, class... Args>
+  struct detector<Default, void_t<Op<Args...>>, Op, Args...> {
+    using value_t = std::true_type;
+    using type = Op<Args...>;
+  };
+   
+  } // namespace detail
+   
+  template <template<class...> class Op, class... Args>
+  using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
+   
+  template <template<class...> class Op, class... Args>
+  using detected_t = typename detail::detector<nonesuch, void, Op, Args...>::type;
+   
+  template <class Default, template<class...> class Op, class... Args>
+  using detected_or = detail::detector<Default, void, Op, Args...>;
+
+  template <class Expected, template<class...> class Op, class... Args>
+  using is_detected_exact = std::is_same<Expected, detected_t<Op, Args...>>;
+
+  template<class C>
+  using has_resize = 
+      decltype(std::declval<C&>().resize(std::declval<size_t>()));  
+}
+
+
+
 /** ExprVector is the main class which represents a vector/buffer using expression templates */
 template<typename T, typename Cont = std::vector<T>>  //BuffDataExt<T> >
 class ExprVector
@@ -152,10 +199,10 @@ public:
   // Constructor for underlying container
   ExprVector(const Cont& other) : cont(other) {}
 
-  template <typename T2, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename T2>    //template <typename T2, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
   ExprVector(std::initializer_list<T2> other)
   {
-    cont.resize(other.size());
+    try_resize_if_needed(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = (other.begin())[i];
   }
@@ -163,12 +210,8 @@ public:
   operator ExprVector<T, std::vector<T>>() const {ExprVector<T, std::vector<T>> x; x = *this; return x;}
 
 
-  template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename Cont2=Cont, typename std::enable_if<ev::is_detected_exact<void, ev::has_resize, Cont2>::value, nullptr_t>::type = nullptr>   //   template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void resize(size_t n) {cont.resize(n);}
-
-  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void resize(size_t n) = delete; //   // NOTE: This function is not available when using ExprVector<T,BuffDataExt<T>>
-
 
   template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void setBuffer(T2* buffer, size_t n) {cont.setBuffer(buffer,n);}
@@ -176,37 +219,21 @@ public:
   template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void setBuffer(const T2* buffer, size_t n) {cont.setBuffer(buffer,n);}  //!< Please don't modify an ExprVector after using this function
 
-  template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
-
-  template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(const T2* buffer, size_t n) = delete;  // NOTE: This function is available only when using ExprVector<T,BuffDataExt<T>>
-
-  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
-  void try_resize_if_needed(size_t n)
+  template <typename Cont2=Cont, typename std::enable_if<ev::is_detected_exact<void, ev::has_resize, Cont2>::value, nullptr_t>::type = nullptr>  // template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  inline void try_resize_if_needed(size_t n)
   {
     if (cont.size() == 0 || cont.size() != n)
       cont.resize(n);
   }
 
-  template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
-  void try_resize_if_needed(size_t n) {}
+  template <typename Cont2=Cont, typename std::enable_if<!ev::is_detected_exact<void, ev::has_resize, Cont2>::value, nullptr_t>::type = nullptr>                 // template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  inline void try_resize_if_needed(size_t n) {}
 
   // assignment operator for ExprVector of different type
-  template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  template<typename T2=T, typename R2=Cont>
   ExprVector& operator=(const ExprVector<T2, R2>& other)
   {
-    for (std::size_t i = 0; i < cont.size(); ++i)
-      cont[i] = other[i];
-    return *this;
-  }
-
-  // assignment operator for ExprVector of different type
-  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
-  ExprVector& operator=(const ExprVector<T2, R2>& other)
-  {
-    if (cont.size() == 0 || cont.size() != other.size())
-      cont.resize(other.size());
+    try_resize_if_needed(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = other[i];
     return *this;
@@ -221,7 +248,7 @@ public:
     return *this;
   }
 
-  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<R2, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_move_assignable<R2>::value && std::is_same<R2,Cont>::value, nullptr_t>::type = nullptr>
   ExprVector& operator=(ExprVector<T2, R2>&& other)
   {
     cont = std::move(other.cont);
@@ -236,13 +263,11 @@ public:
 
   ExprVector& operator=(std::initializer_list<T> other)
   {
-    if (cont.size() == 0 || cont.size() != other.size())
-      cont.resize(other.size());
-    for (std::size_t i = 0; i < cont.size(); ++i)
+   try_resize_if_needed(other.size());
+   for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = (other.begin())[i];
     return *this;
   }
-
 
   // size of underlying container
   inline std::size_t size() const
@@ -567,7 +592,7 @@ public:                                                                         
   using type = decltype(op1[0] OP op2[0]);                                        \
   NAME(const Op1& a, const Op2& b) : op1(a), op2(b) {}                            \
                                                                                   \
-  inline type operator[](const std::size_t i) const                                  \
+  inline type operator[](const std::size_t i) const                               \
   {                                                                               \
     return op1[i] OP op2[i];                                                      \
   }                                                                               \
@@ -580,11 +605,12 @@ public:                                                                         
                                                                                   \
                                                                                   \
 template<typename T, typename R1, typename R2>                                    \
-inline ExprVector<typename NAME<T, R1, R2>::type, NAME<T, R1, R2> >                                            \
+inline ExprVector<typename NAME<T, R1, R2>::type, NAME<T, R1, R2> >               \
 operator OP (const ExprVector<T, R1>& a, const ExprVector<T, R2>& b)              \
 {                                                                                 \
   return ExprVector<typename NAME<T, R1, R2>::type, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.contents(), b.contents()));   \
 }                                                                                 \
+
 
 
 #define ADD_EXPR_VECT_PRE_OP(NAME, OP)                                            \
@@ -612,8 +638,9 @@ template<typename T, typename R2>                                               
 inline ExprVector<T, NAME<T, R2> >                                                \
 operator OP(T a, const ExprVector<T, R2>& b)                                      \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.contents()));                  \
+  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.contents()));              \
 }                                                                                 \
+
 
 
 #define ADD_EXPR_VECT_POST_OP(NAME, OP)                                           \
@@ -641,12 +668,12 @@ template<typename T, typename R1>                                               
 inline ExprVector<T, NAME<T, R1> >                                                \
 operator OP(const ExprVector<T, R1>& a, T b)                                      \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R1> >(NAME<T, R1 >(a.contents(), b));                  \
+  return ExprVector<T, NAME<T, R1> >(NAME<T, R1 >(a.contents(), b));              \
 }                                                                                 
 
 
 
-#define ADD_EXPR_VECT_PRE_SCALAR(NAME, OP, TYPE)                                        \
+#define ADD_EXPR_VECT_PRE_SCALAR(NAME, OP, TYPE)                                  \
 template<typename T, typename Op2, typename std::enable_if<!std::is_same<T,TYPE>::value, nullptr_t>::type = nullptr>   \
 class NAME                                                                        \
 {                                                                                 \
@@ -671,8 +698,9 @@ template<typename T, typename R2, typename std::enable_if<!std::is_same<T,TYPE>:
 inline ExprVector<T, NAME<T, R2> >                                                \
 operator OP(TYPE a, const ExprVector<T, R2>& b)                                   \
 {                                                                                 \
-  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.contents()));                  \
+  return ExprVector<T, NAME<T, R2> >(NAME<T, R2 >(a, b.contents()));              \
 }                                                                                 \
+
 
 
 #define ADD_EXPR_VECT_POST_SCALAR(NAME, OP, TYPE)                                 \
@@ -734,6 +762,7 @@ inline fn (const ExprVector<T, R1>& a)                                     \
 {                                                                          \
   return ExprVector<typename NAME<T, R1>::type, NAME<T, R1> >(NAME<T, R1>(a.contents()));      \
 }                                                                          \
+
 
 
 // This is not too much faster than vectors because of function calls..
@@ -829,6 +858,7 @@ operator OP (const ExprVector<TYPE, R1>& a, const ExprVector<T, R2>& b)         
 {                                                                                 \
   return ExprVector<T, NAME<T, R1, R2> >(NAME<T, R1, R2 >(a.contents(), b.contents()));   \
 }                                                                                 \
+
 
 
 
