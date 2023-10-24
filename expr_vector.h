@@ -213,26 +213,18 @@ public:
   }
 
   // assignment operator for ExprVector of same type
-  /*
-  ExprVector& operator=(const ExprVector& other)
-  {
-    if (cont.size() == 0 || cont.size() != other.size())
-    {
-      if (cont.max_size() > 0)
-        cont.resize(other.size());
-      else
-        throw ExprVectorException("ExprVector::operator=(): requested to resize an unresizable ExprVector");
-    }
-    for (std::size_t i = 0; i < cont.size(); ++i)
-      cont[i] = other[i];
-    return *this;
-  }
-  */
   ExprVector& operator=(const ExprVector& other)
   {
     try_resize_if_needed(other.size());
     for (std::size_t i = 0; i < cont.size(); ++i)
       cont[i] = other[i];
+    return *this;
+  }
+
+  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<R2, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  ExprVector& operator=(ExprVector<T2, R2>&& other)
+  {
+    cont = std::move(other.cont);
     return *this;
   }
 
@@ -521,7 +513,8 @@ public:
 
   static ExprVector zeros(size_t n) {ExprVector v(n,0); return v;}
   static ExprVector linspace(T start, T stop, long n) {ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + i * (stop-start)/(n-1); return v;}
-  static ExprVector arange(T start, T stop, T step=1) {long n = (stop - start + step - 1) / step; if (n<=0) return ExprVector(0); ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
+  //static ExprVector arange(T start, T stop, T step=1) {long n = (stop - start + step - 1) / step; if (n<=0) return ExprVector(0); ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
+  static ExprVector arange(T start, T stop, T step=1) {long n = int(ceil((stop - start) / step)); if (n<=0) return ExprVector(0); ExprVector v(n); for (size_t i=0; i<n; i++) v[i] = start + step * i; return v;}
   static ExprVector arange(T stop) {return arange(0, stop, 1);}
   static ExprVector iota(T start, T stop) {return arange(start, stop);}
 
