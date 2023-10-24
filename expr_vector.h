@@ -210,23 +210,23 @@ public:
   operator ExprVector<T, std::vector<T>>() const {ExprVector<T, std::vector<T>> x; x = *this; return x;}
 
 
-  template <typename Cont2=Cont, typename std::enable_if<ev::is_detected_exact<void, ev::has_resize, Cont2>::value, nullptr_t>::type = nullptr>   //   template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename Cont2=Cont, typename std::enable_if<ev::is_detected_exact<void, ev::has_resize, Cont2>::value && std::is_same<Cont2,Cont>::value, nullptr_t>::type = nullptr>   //   template <typename T2=T, typename std::enable_if<!std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
   void resize(size_t n) {cont.resize(n);}
 
-  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(T2* buffer, size_t n) {cont.setBuffer(buffer,n);}
+  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value && std::is_same<T,T2>::value, nullptr_t>::type = nullptr>
+  void setBuffer(T* buffer, size_t n) {cont.setBuffer(buffer,n);}
 
-  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value, nullptr_t>::type = nullptr>
-  void setBuffer(const T2* buffer, size_t n) {cont.setBuffer(buffer,n);}  //!< Please don't modify an ExprVector after using this function
+  template <typename T2=T, typename std::enable_if<std::is_same<Cont, BuffDataExt<T2>>::value && std::is_same<T,T2>::value, nullptr_t>::type = nullptr>
+  void setBuffer(const T* buffer, size_t n) {cont.setBuffer(buffer,n);}  //!< Please don't modify an ExprVector after using this function
 
-  template <typename Cont2=Cont, typename std::enable_if<ev::is_detected_exact<void, ev::has_resize, Cont2>::value, nullptr_t>::type = nullptr>  // template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename Cont2=Cont, typename std::enable_if<ev::is_detected_exact<void, ev::has_resize, Cont2>::value && std::is_same<Cont2,Cont>::value, nullptr_t>::type = nullptr>
   inline void try_resize_if_needed(size_t n)
   {
     if (cont.size() == 0 || cont.size() != n)
       cont.resize(n);
   }
 
-  template <typename Cont2=Cont, typename std::enable_if<!ev::is_detected_exact<void, ev::has_resize, Cont2>::value, nullptr_t>::type = nullptr>                 // template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
+  template <typename Cont2=Cont, typename std::enable_if<!ev::is_detected_exact<void, ev::has_resize, Cont2>::value && std::is_same<Cont2,Cont>::value, nullptr_t>::type = nullptr>                 // template<typename T2=T, typename R2=Cont, typename std::enable_if<!std::is_same<Cont, std::vector<T2>>::value, nullptr_t>::type = nullptr>
   inline void try_resize_if_needed(size_t n) {}
 
   // assignment operator for ExprVector of different type
@@ -248,7 +248,7 @@ public:
     return *this;
   }
 
-  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_move_assignable<R2>::value && std::is_same<R2,Cont>::value, nullptr_t>::type = nullptr>
+  template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_move_assignable<R2>::value && std::is_same<T2,T>::value && std::is_same<R2,Cont>::value, nullptr_t>::type = nullptr>
   ExprVector& operator=(ExprVector<T2, R2>&& other)
   {
     cont = std::move(other.cont);
