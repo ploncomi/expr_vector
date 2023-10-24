@@ -249,7 +249,7 @@ public:
   }
 
   template<typename T2=T, typename R2=Cont, typename std::enable_if<std::is_move_assignable<R2>::value && std::is_same<T2,T>::value && std::is_same<R2,Cont>::value, nullptr_t>::type = nullptr>
-  ExprVector& operator=(ExprVector<T2, R2>&& other)
+  ExprVector& operator=(ExprVector&& other)
   {
     cont = std::move(other.cont);
     return *this;
