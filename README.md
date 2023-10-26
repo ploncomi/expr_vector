@@ -28,3 +28,4 @@ Also, if python/matplotlib is present, the arrays can be plotted (however, the p
   ExprVector<double>::plot(x, sin(x) + 0.5*sin(0.5*x));
 
 ```
+Note: this code runs in g++ and visual studio. However, visual studio is not able to fully optimize the code (it is slower than computations using raw for).
