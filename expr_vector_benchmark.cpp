@@ -177,7 +177,7 @@ int main()
     t_vector = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
   }
 
-  std::cout << "Processing time respect to raw for:" << std::endl;  
+  std::cout << "Processing time respect to raw for, Time[ns]: " << t_rawfor << std::endl;
   std::cout << "raw for:      " << t_rawfor / t_rawfor <<std::endl;
   std::cout << "ExprVector:   " << t_exprvector / t_rawfor <<std::endl;
   std::cout << "valarray:     " << t_valarray / t_rawfor <<std::endl;
